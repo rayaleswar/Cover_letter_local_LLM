@@ -1,4 +1,8 @@
-matplotlib
-streamlit
-ollam
+streamlit 
+ollama
 spacy
+WordCloud
+matplotlib
+PyPDF2
+BytesIO
+docx 
