@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import PyPDF2
 from io import BytesIO
 from docx import Document
+from datetime import datetime
 
 #setting streamlit page configurations
 st.set_page_config(
@@ -37,9 +38,7 @@ if uploaded_file is not None:
         page = pdf_reader.pages[page_num]
         resume += page.extract_text()
 
-jobDesc = st.text_area("Please Enter Job Description from LinkedIn/Indeed or any Other Job Portal")
-if jobDesc:
-    st.write(":white_check_mark:")
+jobDesc = st.text_area("Please Enter Job Description from LinkedIn/Indeed or any Other Job Portal", height = 400)
 
 def extract_key_phrases(job_description):
     # Load the English language model
@@ -74,27 +73,35 @@ options = ['gemma:2b :: Is faster but less accurate', 'mistral :: is more accura
 def format_option(option):
     return option.upper()
 
-selected_option = st.selectbox('Please select a Model for Coverletter Generation:', options, format_func=format_option, key='fruit_dropdown').split(" :: ")[0].strip()
+selected_option = st.selectbox('Please select a Model for Coverletter Generation:', options, format_func=format_option, key='Model Selection').split(" :: ")[0].strip()
 
-# local llm api call
-response = ollama.chat(
-    model = selected_option,
-    messages = [{'role': 'user', 
-               'content': f'write a cover letter the following {resume} and job description of {jobDesc}'}],
-)
+def OllamaApi():
+    # local llm api call
+    response = ollama.chat(
+        model = selected_option,
+        messages = [{'role': 'assistant', 
+                'content': f'write a cover letter the following {resume} and job description of {jobDesc}'}],
+    )
+    return response['message']['content']
 
-st.text_area("Cover Letter", response['message']['content'])
+coverLetter  = ''
 
-st.text_area("Cover Letter", response, height = 400)
+if jobDesc:
+    coverLetter = OllamaApi()
+    st.write(":white_check_mark:")
+
+st.text_area("Cover Letter", coverLetter, height = 400)
 
 user_selected_download = st.checkbox("Download the Cover Letter")
+
+now = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
 
 # If the user selects the checkbox, save the document
 if user_selected_download:
     # Create a new document
     document = Document()
-    document.add_paragraph(response)
-    document.save('CoverLetter.docx')
-    st.success("Document saved as 'CoverLetter.docx'")
+    document.add_paragraph(coverLetter)
+    document.save(f'CoverLetter{now}.docx')
+    st.success(f"Document saved as 'CoverLetter{now}.docx'")
 else:
     st.info("Select the checkbox to download the document.")
